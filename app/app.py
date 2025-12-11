@@ -1,19 +1,20 @@
 import os
 import time
+from typing import List, Dict, Any
+
 import psycopg2
 from flask import Flask, jsonify
-from typing import List, Dict, Any
 
 # --- Ініціалізація Flask ---
 app = Flask(__name__)
 
 # --- Налаштування бази даних з environment змінних ---
 # Використовуємо 'user_db' для уніфікації користувача та бази даних
-DB_NAME = os.environ.get('POSTGRES_DB', 'user_db')
-DB_USER = os.environ.get('POSTGRES_USER', 'user_db')
-DB_PASSWORD = os.environ.get('POSTGRES_PASSWORD', 'password')
-DB_HOST = os.environ.get('POSTGRES_HOST', 'db')
-DB_PORT = os.environ.get('POSTGRES_PORT', '5432')
+DB_NAME = os.environ.get("POSTGRES_DB", "user_db")
+DB_USER = os.environ.get("POSTGRES_USER", "user_db")
+DB_PASSWORD = os.environ.get("POSTGRES_PASSWORD", "password")
+DB_HOST = os.environ.get("POSTGRES_HOST", "db")
+DB_PORT = os.environ.get("POSTGRES_PORT", "5432")
 
 conn = None
 
@@ -38,7 +39,7 @@ def get_db_connection():
                 password=DB_PASSWORD,
                 host=DB_HOST,
                 port=DB_PORT,
-                connect_timeout=5
+                connect_timeout=5,
             )
             print("База даних успішно підключена!")
 
@@ -61,13 +62,15 @@ def get_db_connection():
             return conn
 
         except psycopg2.OperationalError as e:
-            print(f"Спроба {i + 1}/{max_retries}: Помилка підключення до БД ({e}). Очікування {retry_delay}s...")
+            print(
+                f"Спроба {i + 1}/{max_retries}: Помилка підключення до БД ({e}). Очікування {retry_delay}s..."
+            )
             time.sleep(retry_delay)
 
     raise Exception("Не вдалося підключитися до бази даних після кількох спроб.")
 
 
-@app.route('/users')
+@app.route("/users")
 def list_users():
     """Ендпоінт, що повертає список користувачів з БД."""
     try:
@@ -79,11 +82,9 @@ def list_users():
 
             users_list: List[Dict[str, Any]] = []
             for user in users_data:
-                users_list.append({
-                    "id": user[0],
-                    "username": user[1],
-                    "email": user[2]
-                })
+                users_list.append(
+                    {"id": user[0], "username": user[1], "email": user[2]}
+                )
 
         return jsonify(users_list)
 
@@ -91,16 +92,18 @@ def list_users():
         return jsonify({"error": "Помилка сервера", "details": str(e)}), 500
 
 
-@app.route('/')
+@app.route("/")
 def home():
     """Простий тестовий ендпоінт."""
     return "Web Service is running. Access /users to see data from PostgreSQL."
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         get_db_connection()
     except Exception as e:
-        print(f"Критична помилка ініціалізації БД. Сервер запущено, але ендпоінт /users може не працювати: {e}")
+        print(
+            f"Критична помилка ініціалізації БД. Сервер запущено, але ендпоінт /users може не працювати: {e}"
+        )
 
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host="0.0.0.0", port=5000)
