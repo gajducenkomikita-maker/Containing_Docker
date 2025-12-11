@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # --- 1. Сервіс бази даних (PostgreSQL) ---
+  db:
+    image: postgres:14-alpine
+    container_name: postgres_db
+
+    # ✅ Уніфіковані змінні
+    environment:
+      POSTGRES_USER: user_db
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: user_db
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    restart: always
+
+    # Healthcheck для перевірки готовності
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- 2. Веб-сервіс (Flask) ---
+  web:
+    build: .
+    container_name: flask_web
+
+    ports:
+      - "5000:5000"
+
+    # ✅ Уніфіковані змінні та HOST=db
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_USER: user_db
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: user_db
+
+    # Запуск тільки після успішного healthcheck БД
+    depends_on:
+      db:
+        condition: service_healthy
+
+    # ✅ СКОРИГОВАНО: Команда для запуску (app.py)
+    command: ["python", "app.py"]
+
+volumes:
+  postgres_data:
